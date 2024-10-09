@@ -4,46 +4,17 @@
 #include <variant>
 
 
-/////////////////////
-// fib: int -> int //
-/////////////////////
-
-int fib(int n) {
-  if (n == 0) return 0;
-  if (n == 1) return 1;
-  return fib(n - 1) + fib(n - 2);
-}
-
-
 //////////////////////////
 // definition of Object //
 //////////////////////////
 
-struct Test {
-  std::string toString() const { return "I'm a test struct"; };
-};
-
-std::ostream& operator<<(std::ostream &os, const Test &t) {
-  os << t.toString();
-  return os;
-}
+struct Test {};
+using Object = std::variant<int, Test>;
 
 
-using Object = std::variant<int, double, Test>;
-
-std::ostream& operator<<(std::ostream &os, const Object &n) {
-  auto helper = [&os](auto &&arg) -> std::ostream & {
-    os << arg;
-    return os;
-  };
-
-  return std::visit(helper, n);
-}
-
-
-///////////////////////////
-// fib: Object -> Object //
-///////////////////////////
+////////////////////////////
+// func: Object -> Object //
+////////////////////////////
 
 template <class... Ts> struct Collector : Ts... {
   using Ts::operator()...;
@@ -59,34 +30,22 @@ struct TestException : public std::exception {
 };
 
 
-Object fib(Object n) {
-  auto fibInt = [](int n) -> int {
-    return fib(n);
-  };
-  auto fibDouble = [](double n) -> int {
-    return fib(static_cast<int>(n));
-  };
-  auto fibTest = [](Test n) -> int {
+Object func(Object n) {
+  auto funcInt = [](int) -> int { return 233; };
+  auto funcTest = [](Test) -> int {
     throw TestException{"'Test' struct has no business doing fib!"};
   };
 
-  return std::visit(Collector{fibInt, fibDouble, fibTest}, n);
+  return std::visit(Collector{funcInt, funcTest}, n);
 }
 
 
 int main() {
   using namespace std;
 
-  int n = 30;
-  cout << "Fibonacci of " << n << " is " << fib(n) << endl;
-
-  Object num{30.13};
-  Object result = fib(num);
-  cout << "Fibonacci of " << num << " is " << result << endl;
-
   Object test{Test{}};
   try {
-    fib(test);
+    func(test);
   } catch (const TestException &e) {
     cout << "Caught exception: " << e.message << endl;
   }
