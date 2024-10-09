@@ -1,3 +1,4 @@
+#include <exception>
 #include <iostream>
 #include <string>
 #include <variant>
@@ -19,7 +20,6 @@ int fib(int n) {
 //////////////////////////
 
 struct Test {
-  int toNumber() const { return 10; };
   std::string toString() const { return "I'm a test struct"; };
 };
 
@@ -52,6 +52,13 @@ template <class... Ts> struct Collector : Ts... {
 // to make ccls happy
 template <class... Ts> Collector(Ts...) -> Collector<Ts...>;
 
+
+struct TestException : public std::exception {
+  TestException(const std::string &message) : message(message) {};
+  std::string message;
+};
+
+
 Object fib(Object n) {
   auto fibInt = [](int n) -> int {
     return fib(n);
@@ -60,7 +67,7 @@ Object fib(Object n) {
     return fib(static_cast<int>(n));
   };
   auto fibTest = [](Test n) -> int {
-    return fib(n.toNumber());
+    throw TestException{"'Test' struct has no business doing fib!"};
   };
 
   return std::visit(Collector{fibInt, fibDouble, fibTest}, n);
@@ -78,7 +85,11 @@ int main() {
   cout << "Fibonacci of " << num << " is " << result << endl;
 
   Object test{Test{}};
-  cout << "Fibonacci of " << test << " is " << fib(test) << endl;
+  try {
+    fib(test);
+  } catch (const TestException &e) {
+    cout << "Caught exception: " << e.message << endl;
+  }
 
   return 0;
 }
