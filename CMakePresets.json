@@ -1,0 +1,31 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "description": "Debug config on Unix",
+            "binaryDir": "${sourceDir}/build/Debug",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+                "CMAKE_CXX_FLAGS_DEBUG": "-g -O0"
+            },
+            "condition": {
+                "type": "matches",
+                "string": "${hostSystemName}",
+                "regex": "Linux|Darwin"
+            }
+        },
+        {
+            "name": "release",
+            "description": "Release config on Unix",
+            "inherits": "debug",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ]
+}
