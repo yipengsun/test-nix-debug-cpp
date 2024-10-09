@@ -63,6 +63,8 @@ Object func(Object n) {
   In all 5 cases, the program runs normally, w/o a debugger attached.
   In all 5 cases, a Windows VS Code session attached with WSL can debug the
   code w/o problem.
+
+  Unfortunately, can't produce the problem on a bare-bone NixOS machine.
 */
 
 int main() {
