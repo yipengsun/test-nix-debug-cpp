@@ -11,7 +11,7 @@
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
       perSystem =
-        { system, inputs', pkgs', config, ... }:
+        { system, inputs', pkgs', config, lib, ... }:
         {
           _module.args.pkgs' = import self.inputs.nixpkgs {
             inherit system;
@@ -32,12 +32,14 @@
               in
               with pkgs'; [
                 cmake
-                gdb
-                cgdb
 
                 helperB
                 helperD
-              ];
+              ] ++ lib.optionals pkgs'.stdenv.isLinux (with pkgs'; [
+                gdb
+                cgdb
+              ]);
+
             hardeningDisable = [ "fortify" ];
 
             shellHook = ''
