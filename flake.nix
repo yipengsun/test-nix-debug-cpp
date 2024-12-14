@@ -20,6 +20,14 @@
           devShells.default = pkgs'.mkShell {
             name = "test-nix-debug-cpp";
 
+            # FIXME: workaround for https://github.com/NixOS/nixpkgs/issues/273875
+            nativeBuildInputs = with pkgs'; [
+              cmake
+              ninja
+            ] ++ lib.optionals pkgs'.stdenv.isDarwin (with pkgs'; [
+              llvmPackages.clang-tools
+            ]);
+
             buildInputs =
               let
                 helperB = pkgs'.writeShellScriptBin "B" ''
@@ -31,8 +39,6 @@
                 '';
               in
               with pkgs'; [
-                cmake
-
                 helperB
                 helperD
               ] ++ lib.optionals pkgs'.stdenv.isLinux (with pkgs'; [
