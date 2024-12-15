@@ -24,9 +24,7 @@
             nativeBuildInputs = with pkgs'; [
               cmake
               ninja
-            ] ++ lib.optionals pkgs'.stdenv.isDarwin (with pkgs'; [
-              llvmPackages.clang-tools
-            ]);
+            ] ++ (with pkgs'; lib.optional stdenv.isDarwin llvmPackages.clang-tools);
 
             buildInputs =
               let
@@ -37,14 +35,13 @@
                   cmake --preset debug
                   ${pkgs'.compdb}/bin/compdb -p build/Debug/ list > compile_commands.json
                 '';
+
+                debugTools = (with pkgs'; if stdenv.isLinux then [ gdb cgdb ] else [ lldb ]);
               in
-              with pkgs'; [
+              [
                 helperB
                 helperD
-              ] ++ lib.optionals pkgs'.stdenv.isLinux (with pkgs'; [
-                gdb
-                cgdb
-              ]);
+              ] ++ debugTools;
 
             hardeningDisable = [ "fortify" ];
 
