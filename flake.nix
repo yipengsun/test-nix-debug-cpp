@@ -24,7 +24,8 @@
             nativeBuildInputs = with pkgs'; [
               cmake
               ninja
-            ] ++ (with pkgs'; lib.optional stdenv.isDarwin llvmPackages.clang-tools);
+              llvmPackages.clang-tools
+            ];
 
             buildInputs =
               let
