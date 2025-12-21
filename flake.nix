@@ -1,55 +1,67 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, flake-parts } @ inputs:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+  outputs =
+    { nixpkgs, ... }:
+    let
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
 
-      perSystem =
-        { system, inputs', pkgs', config, lib, ... }:
+      forAllSystems =
+        function:
+        nixpkgs.lib.genAttrs supportedSystems (system: function (import nixpkgs { inherit system; }));
+    in
+    {
+      devShells = forAllSystems (
+        pkgs:
+        let
+          inherit (pkgs) lib;
+        in
         {
-          _module.args.pkgs' = import self.inputs.nixpkgs {
-            inherit system;
-          };
-
-          devShells.default = pkgs'.mkShell {
-            name = "test-nix-debug-cpp";
-
-            # FIXME: workaround for https://github.com/NixOS/nixpkgs/issues/273875
-            nativeBuildInputs = with pkgs'; [
+          default = pkgs.mkShell {
+            nativeBuildInputs = with pkgs; [
               cmake
               ninja
-              llvmPackages.clang-tools
+              llvmPackages.clang-tools # need clang-scan-deps
             ];
 
             buildInputs =
               let
-                helperB = pkgs'.writeShellScriptBin "B" ''
+                helperB = pkgs.writeShellScriptBin "B" ''
                   cmake --preset debug && cmake --build build/Debug
                 '';
-                helperD = pkgs'.writeShellScriptBin "D" ''
-                  cmake --preset debug
-                  ${pkgs'.compdb}/bin/compdb -p build/Debug/ list > compile_commands.json
-                '';
 
-                debugTools = (with pkgs'; if stdenv.isLinux then [ gdb cgdb ] else [ lldb ]);
+                debugTools = (
+                  with pkgs;
+                  if stdenv.isLinux then
+                    [
+                      gdb
+                      cgdb
+                    ]
+                  else
+                    [ lldb ]
+                );
               in
               [
                 helperB
-                helperD
-              ] ++ debugTools;
+              ]
+              ++ debugTools;
 
             hardeningDisable = [ "fortify" ];
 
             shellHook = ''
               export PATH=$(pwd)/build/Debug:$PATH
+
+              ${lib.optionalString pkgs.stdenv.cc.isClang ''
+                export NIX_CFLAGS_COMPILE="-isystem ${lib.getDev pkgs.libcxx}/include/c++/v1 $NIX_CFLAGS_COMPILE"
+              ''}
             '';
           };
-        };
+        }
+      );
     };
 }
